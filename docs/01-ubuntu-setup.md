@@ -347,7 +347,7 @@ against recorded captures:
 
 ```sh
 cd ids
-./run.sh replay all          # eleven captures, one per rule
+./run.sh replay all          # fourteen captures, every rule covered
 ./run.sh replay nominal      # the one that must raise nothing
 ```
 

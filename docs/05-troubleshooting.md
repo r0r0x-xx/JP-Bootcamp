@@ -107,7 +107,8 @@ To prove the rules themselves work, with no hardware at all:
 cd ids && ./run.sh replay all
 ```
 
-That runs eleven captures against the rule set. If those fire and your live
+That runs fourteen captures against the rule set, between them firing all
+fifteen rules. If those fire and your live
 bench does not, the problem is the path the traffic takes, not the rules.
 
 ### "FLASH WINDOW LOCKED", and the window id is right

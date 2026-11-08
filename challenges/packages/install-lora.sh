@@ -1,17 +1,10 @@
 #!/usr/bin/env bash
-# Install the LoRa receiver blocks lab 1.6 needs.
-#
-# gr-lora_sdr is not in the Ubuntu archive, so the course ships it built. It
-# links against GNU Radio's runtime library, and every Ubuntu release carries
-# a different one, so there is one package per release and architecture and
-# this picks yours. Nothing is compiled on your machine.
+# Install the LoRa receiver blocks lab 1.6 needs. One package per Ubuntu
+# release and architecture; this picks yours. See README.md.
 set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# Most people run this as themselves and need sudo. Some run it as root in a
-# container or a freshly built virtual machine, where sudo is often not even
-# installed, and calling it there fails for a reason that has nothing to do
-# with the package.
+# Root in a container often has no sudo installed at all.
 if [ "$(id -u)" -eq 0 ]; then SUDO=""; else SUDO="sudo"; fi
 
 REL="$(. /etc/os-release && echo "${VERSION_ID:-unknown}")"
@@ -34,8 +27,7 @@ fi
 echo "Ubuntu ${REL} on ${ARCH}"
 echo "Installing $(basename "$DEB")"
 
-# GNU Radio itself comes from the archive. apt pulls it in as a dependency of
-# the package, so this works on a machine that has never seen GNU Radio.
+# apt pulls GNU Radio in as a dependency.
 $SUDO apt-get update
 $SUDO apt-get install -y "$DEB"
 $SUDO ldconfig

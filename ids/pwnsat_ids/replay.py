@@ -132,13 +132,43 @@ def generate(name: str) -> list[tuple[str, bytes]]:
             event(apid=0x0C, length=12, sequence=i, flags=0x03)
         event(apid=spp.APID_DEBUG_CONFIG, length=18, result=0x00, flags=0x03)
         event(apid=spp.APID_GS_MODE, length=18, result=0x00, flags=0x03)
+    elif name == "injection":
+        # lab 2.2: a critical command executed with the secure link off.
+        for i in range(12):
+            tm(0x0C, struct.pack("<HHH", 3350, 200, i))
+            event(apid=0x0C, length=12, sequence=i, flags=0x03)
+        for n, apid in enumerate((spp.APID_SET_THRUSTER, spp.APID_RESETC,
+                                  spp.APID_SET_THRUSTER)):
+            out.append(("up", spp.build_spp(apid, tc=True, seq=50 + n,
+                                            payload=b"\x01\x80")))
+            event(apid=apid, length=18, sequence=50 + n,
+                  result=0x00, flags=0x01)             # executed, not secure
+    elif name == "runt":
+        # lab 2.1: frames too short to hold a primary header.
+        for i in range(15):
+            tm(0x0C, struct.pack("<HHH", 3350, 200, i))
+        for raw in (b"\x18", b"\x18\x0c", b"\x18\x0c\xc0", b"\x18\x0c\xc0\x00\x00"):
+            out.append(("up", raw))
+    elif name == "regression":
+        # lab 1.10: the sequence counter walking backwards.
+        for i in range(40):
+            tm(0x0C, struct.pack("<HHH", 3350, 200, i))
+        # Built by hand: an exact repeat raises duplicate-frame and stops
+        # there, so each frame has to be one the sensor has not seen.
+        for n in range(300, 310):
+            out.append(("down", spp.build_spp(0x0F, tc=False, seq=n,
+                                              payload=bytes([1, n & 0x03]))))
+        for n in (295, 296, 297):                       # behind, within the window
+            out.append(("down", spp.build_spp(0x0F, tc=False, seq=n,
+                                              payload=bytes([1, n & 0x03]))))
     else:
         raise KeyError(f"unknown capture '{name}'. Available: {', '.join(NAMES)}")
     return out
 
 
 NAMES = ("nominal", "recon", "replay", "malformed", "spoof", "handover",
-         "radio-on", "crc", "downgrade", "flash-dump", "gate-chain")
+         "radio-on", "crc", "downgrade", "flash-dump", "gate-chain",
+         "injection", "runt", "regression")
 
 
 def load(name: str) -> list[tuple[str, bytes]]:
