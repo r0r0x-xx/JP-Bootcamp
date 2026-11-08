@@ -26,7 +26,7 @@ is a control you can verify from the boot banner, not a promise.
 | [`ids/`](ids/) | **Space IDS**, the sensor that sits between board and console | Python 3 + `pyserial` |
 | [`c3/`](c3/) | **PWNSAT-C3**, the ground console, a web dashboard | Python 3 + its `requirements.txt` |
 | [`attacks/`](attacks/) | The ten attacks, all over USB | Python 3 + `pyserial`, `pycryptodomex` |
-| [`challenges/`](challenges/) | The RF captures labs 1.5 and 1.6 work on | `inspectrum`, GNU Radio + `gr-lora_sdr` |
+| [`challenges/`](challenges/) | The RF captures labs 1.5 and 1.6 work on, and the LoRa receiver built for each Ubuntu | `inspectrum` and GNU Radio, both from `apt` |
 
 ---
 
@@ -88,6 +88,7 @@ Being specific about this matters more than claiming coverage.
 | Firmware, flashed and verified on hardware | ✅ 8 Nov 2026, board `fsat-20004E46` | not yet |
 | Radio absent from the binary, checked against the `.uf2` | ✅ 0 SX126x symbols, 0 transmit | n/a |
 | Space IDS test suite | ✅ 15/15 | not yet |
+| LoRa receiver packages, installed and decoding | n/a | ✅ 8 Nov 2026, **all six**, see below |
 | Space IDS in line, rules firing | ✅ 6 rules on a short pass, 0 on clean traffic | not yet |
 | Lab 2.9, key off the board | ✅ 165 octets ending `PWNsatLabKey1234` | not yet |
 | All ten attacks in one pass | ✅ 7 Nov, board `fsat-200052E9`, 116 alerts, 11 rules | not yet |
@@ -97,8 +98,15 @@ The ten-attack pass was run on the previous board and the previous firmware.
 The firmware changed on 8 November, when the radio driver was removed outright
 rather than left uncalled, so that row is the one still owed a repeat.
 
-**This repository exists to be tested on Ubuntu.** Nothing in it has run on
-Linux yet. Where a step is a reasoned translation from the macOS procedure
+**The LoRa packages are the exception, and the only one.** Each of the six in
+[`challenges/packages/`](challenges/packages/) was installed into a clean
+container of its own Ubuntu release and architecture, and made to decode
+`challenges/02_downlink_916MHz_decode.cf32` to the **28 CCSDS packets** known
+to be in that file. A package that compiles is not a package that decodes, so
+the check is the decode.
+
+**Everything else in this repository exists to be tested on Ubuntu and has
+not been.** Where a step is a reasoned translation from the macOS procedure
 rather than something we watched work, the document says so in those words.
 
 ---

@@ -56,19 +56,25 @@ if you want to see how.
 
 ```sh
 sudo apt update
-sudo apt install -y inspectrum gnuradio git cmake build-essential
+sudo apt install -y inspectrum gnuradio
+./challenges/packages/install-lora.sh
 ```
 
-`inspectrum` is the spectrum and waterfall viewer for lab 1.5. It is in the
-Ubuntu archive for 22.04, 24.04 and 26.04.
+`inspectrum` is the spectrum and waterfall viewer for lab 1.5 and `gnuradio`
+is the framework lab 1.6 runs on. Both are in the Ubuntu archive for 22.04,
+24.04 and 26.04.
 
-For lab 1.6 you need the LoRa receiver, which is not packaged:
+The LoRa receiver blocks are **not** in the archive. Rather than make
+everybody compile them on the morning of the workshop, they ship built, in
+`packages/`. The script reads your release and your architecture and installs
+the matching package.
 
-```sh
-git clone https://github.com/tapparelj/gr-lora_sdr.git
-cd gr-lora_sdr && mkdir build && cd build
-cmake .. && make -j$(nproc) && sudo make install && sudo ldconfig
-```
+**Nothing is compiled on your machine.** If there is no package for your
+combination, the script says so and prints the commands to build it from
+source, which still works and takes a few minutes.
+
+See `packages/README.md` for what is in each package, how they were built,
+and why there are six of them.
 
 ---
 

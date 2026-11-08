@@ -42,16 +42,21 @@ sudo apt install -y python3 python3-venv python3-pip git usbutils
 | `git` | To clone this repository |
 | `usbutils` | Gives you `lsusb`, which is how you prove the board is attached |
 
-For the Day 1 radio labs only, two more:
+For the Day 1 radio labs only:
 
 ```sh
-sudo apt install -y inspectrum gnuradio cmake build-essential
+sudo apt install -y inspectrum gnuradio
+./challenges/packages/install-lora.sh
 ```
 
-`inspectrum` is the spectrum and waterfall viewer for lab 1.5. Lab 1.6 also
-needs the LoRa receiver, which is not packaged and is built from source. The
-steps are in [`challenges/README.md`](../challenges/README.md), and they can
-wait until the morning of Day 1.
+`inspectrum` is the spectrum and waterfall viewer for lab 1.5 and `gnuradio`
+is what lab 1.6 runs on. Both are in the archive.
+
+The LoRa receiver blocks are not, so they ship built in
+[`challenges/packages/`](../challenges/packages/), one per Ubuntu release and
+architecture. The script picks yours. **Nothing is compiled here**, and the
+whole thing takes seconds, so it can wait until the morning of Day 1 without
+costing anybody an hour.
 
 Check what you got:
 
