@@ -54,23 +54,37 @@ There is no flashing tool to install.
 
 **3. Plug the USB cable back in**, still holding BOOTSEL.
 
-**4. Let go.** A drive called `RPI-RP2` appears.
-
-On Ubuntu desktop it usually mounts automatically at
-`/media/$USER/RPI-RP2`. If it does not:
+**4. Let go.** A drive called `RPI-RP2` appears and Ubuntu desktop mounts it
+on its own. **Where** it mounts depends on the release: 26.04 uses
+`/run/media/$USER/RPI-RP2`, earlier ones `/media/$USER/RPI-RP2`. Let the
+system tell you instead of guessing:
 
 ```sh
-lsblk -o NAME,LABEL,MOUNTPOINT | grep -i rpi
-sudo mkdir -p /mnt/rpi
-sudo mount /dev/sdX1 /mnt/rpi      # the device lsblk showed
+lsblk -o LABEL,MOUNTPOINT -nr | grep RPI-RP2
 ```
 
-**5. Copy the image onto it:**
+**5. Copy the image onto it.** This finds the mount point itself, so it works
+on any release:
 
 ```sh
-cp firmware/binaries/flatsat-course-noradio-v1.0.5.uf2 /media/$USER/RPI-RP2/
+DEST=$(lsblk -o LABEL,MOUNTPOINT -nr | awk '$1=="RPI-RP2" {print $2}')
+cp firmware/binaries/flatsat-course-noradio-v1.0.5.uf2 "$DEST/"
 sync
 ```
+
+If `DEST` comes back empty, nothing mounted it. Mount it yourself, again
+without typing a device name by hand:
+
+```sh
+DEV=$(lsblk -o LABEL,PATH -nr | awk '$1=="RPI-RP2" {print $2}')
+sudo mkdir -p /mnt/rpi && sudo mount "$DEV" /mnt/rpi
+sudo cp firmware/binaries/flatsat-course-noradio-v1.0.5.uf2 /mnt/rpi/
+sync
+```
+
+> **Check that `$DEST` is not empty before the `cp`.** An empty one makes the
+> command copy the image to `/`, where nothing happens and nothing complains,
+> and the board stays unflashed while the output looks like success.
 
 **6. The board reboots on its own.** The drive disappears, which is what
 success looks like. It is not an error.
