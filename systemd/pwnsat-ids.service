@@ -1,0 +1,39 @@
+# Space IDS -- the sensor between the board and the ground console.
+#
+# Install:
+#   sudo cp systemd/pwnsat-ids.service /etc/systemd/system/
+#   sudo systemctl edit pwnsat-ids     # set User, WorkingDirectory if not /opt/JP-Bootcamp
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now pwnsat-ids
+#
+# The unit assumes the repository is at /opt/JP-Bootcamp and the account that
+# runs it is in the dialout group. Change both below, or with `systemctl edit`.
+
+[Unit]
+Description=Space IDS - in-line sensor for the FlatSat bench
+Documentation=https://github.com/r0r0x-xx/JP-Bootcamp
+# Nothing to wait for: the sensor looks for the board itself and keeps looking.
+After=network.target
+
+[Service]
+Type=simple
+User=pwnsat
+Group=dialout
+WorkingDirectory=/opt/JP-Bootcamp/ids
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/opt/JP-Bootcamp/.venv/bin/python3 -m pwnsat_ids.cli run
+
+# The board goes away for about eight seconds whenever a lab resets it, and the
+# sensor already waits that out by itself. Restart is for the cases it cannot
+# handle, so give it room rather than hammering a port that is not back yet.
+Restart=on-failure
+RestartSec=5
+
+# It owns a serial port and serves two local ports. It needs nothing else.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=read-only
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,23 @@
+{
+  "global": {
+    "core:datatype": "cf32_le",
+    "core:sample_rate": 500000.0,
+    "core:version": "1.0.0",
+    "core:description": "The same downlink, centred and with a cleaner noise floor, for the demodulation exercise.",
+    "core:author": "Starsec",
+    "core:recorder": "gr-lora_sdr via GNU Radio 3.10"
+  },
+  "captures": [
+    {
+      "core:sample_start": 0,
+      "core:frequency": 916000000.0
+    }
+  ],
+  "annotations": [
+    {
+      "core:sample_start": 0,
+      "core:sample_count": 438816,
+      "core:description": "Centred on the carrier. Feed it to the gr-lora_sdr receiver."
+    }
+  ]
+}

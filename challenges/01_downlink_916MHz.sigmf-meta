@@ -1,0 +1,23 @@
+{
+  "global": {
+    "core:datatype": "cf32_le",
+    "core:sample_rate": 500000.0,
+    "core:version": "1.0.0",
+    "core:description": "FlatSat downlink, synthesised at the link's real parameters and carrying frames captured from the bench over USB.",
+    "core:author": "Starsec",
+    "core:recorder": "gr-lora_sdr via GNU Radio 3.10"
+  },
+  "captures": [
+    {
+      "core:sample_start": 0,
+      "core:frequency": 916000000.0
+    }
+  ],
+  "annotations": [
+    {
+      "core:sample_start": 0,
+      "core:sample_count": 468816,
+      "core:description": "The signal is not at the centre of the band. Find it before you measure it."
+    }
+  ]
+}

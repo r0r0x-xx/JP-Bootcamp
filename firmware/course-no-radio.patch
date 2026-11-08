@@ -1,0 +1,178 @@
+diff -ruN --exclude=.pio --exclude=.gitignore .orig/firmware.ino Firmware/firmware.ino
+--- .orig/firmware.ino	2026-11-06 21:17:27
++++ Firmware/firmware.ino	2026-11-06 21:18:40
+@@ -6,6 +6,7 @@
+  *
+  */
+ #include "led.h"
++#include "radio_off.h"
+ #include "rdownlink.h"
+ #include "ruplink.h"
+ #include "sensors.h"
+@@ -21,14 +22,21 @@
+ static timeout_worker_t_t t_tra = {.inverval = 5000, .previous = 0};
+ 
+ void setup() {
++#if FLATSAT_NO_RADIO
++  /* First thing, before anything can touch the SPI bus. */
++  radioHoldInReset();
++#endif
+   obcSetupUSB();
+   ledConfigure();
+   obcConfigureCore0();
+   sensorsConfigure();
++#if !FLATSAT_NO_RADIO
+   uplinkRadioConfigure();
+   downlinkRadioConfigure();
+   uplinkRadioRegisterCb(commandHandlerRadio);
++#endif
+   obcUSBPacketRecivedCallback(commandHandlerUSB);
++  Serial.printf("[INFO] Radio: %s\r\n", FLATSAT_RADIO_STATE_STR);
+   ledTurnWhite();
+   delay(500);
+   ledTurnOff();
+@@ -38,8 +46,12 @@
+ 
+ void loop() {
+   gpsPoll();
++#if !FLATSAT_NO_RADIO
+   uplinkRadioCheckPacketReceived();
+   downlinkRadioCheckTransmition();
++#endif
++  /* Still runs with the radio off: it builds the telemetry frames, and
++   * transmitPacketRadioUSB() sends them over USB. Only the radio half goes. */
+   telemetryRadioWorker();
+   if (consoleSensorModeActive()) {
+     telemetryDashboardWorker();
+diff -ruN --exclude=.pio --exclude=.gitignore .orig/platformio.ini Firmware/platformio.ini
+--- .orig/platformio.ini	2026-11-06 21:17:28
++++ Firmware/platformio.ini	2026-11-06 21:18:40
+@@ -15,3 +15,14 @@
+     makuna/NeoPixelBus @ ^2.8.0
+     sparkfun/SparkFun LIS2DH12 Arduino Library @ ^1.0.3
+     adafruit/Adafruit BME280 Library @ ^2.2.4
++
++; The course build. Same source, one flag: both SX1262 are held in reset and
++; every call that would drive them is compiled out. The board cannot transmit
++; or receive on any band, which is a property somebody can verify rather than
++; a promise somebody has to trust.
++;
++;   pio run -e pico_tinyusb_norf
++;
++[env:pico_tinyusb_norf]
++extends = env:pico_tinyusb
++build_flags = -DUSE_TINYUSB -DFLATSAT_NO_RADIO=1
+diff -ruN --exclude=.pio --exclude=.gitignore .orig/radio_off.cpp Firmware/radio_off.cpp
+--- .orig/radio_off.cpp	1969-12-31 18:00:00
++++ Firmware/radio_off.cpp	2026-11-06 21:17:44
+@@ -0,0 +1,33 @@
++/*  - radio_off.cpp
++ *
++ * SPDX-License-Identifier: GPL-2.0-or-later
++ */
++#include "radio_off.h"
++
++#if FLATSAT_NO_RADIO
++#include "pins.h"
++#include <Arduino.h>
++
++void radioHoldInReset(void) {
++  /* RESET low, and keep it low. The SX1262 stays in reset while the board is
++   * powered, so neither module can transmit or receive. */
++  pinMode(PIN_RADIO0_RST, OUTPUT);
++  digitalWrite(PIN_RADIO0_RST, LOW);
++  pinMode(PIN_RADIO1_RST, OUTPUT);
++  digitalWrite(PIN_RADIO1_RST, LOW);
++
++  /* Antenna switches off as well. Belt and braces: even a module that somehow
++   * came out of reset would not reach the antenna. */
++  pinMode(PIN_RADIO0_ANT_SW, OUTPUT);
++  digitalWrite(PIN_RADIO0_ANT_SW, LOW);
++  pinMode(PIN_RADIO1_ANT_SW, OUTPUT);
++  digitalWrite(PIN_RADIO1_ANT_SW, LOW);
++
++  /* Chip selects high (deselected), so nothing on the shared SPI bus talks to
++   * a radio by accident. */
++  pinMode(PIN_RADIO0_NSS, OUTPUT);
++  digitalWrite(PIN_RADIO0_NSS, HIGH);
++  pinMode(PIN_RADIO1_NSS, OUTPUT);
++  digitalWrite(PIN_RADIO1_NSS, HIGH);
++}
++#endif /* FLATSAT_NO_RADIO */
+diff -ruN --exclude=.pio --exclude=.gitignore .orig/radio_off.h Firmware/radio_off.h
+--- .orig/radio_off.h	1969-12-31 18:00:00
++++ Firmware/radio_off.h	2026-11-06 21:17:44
+@@ -0,0 +1,31 @@
++/*  - radio_off.h
++ *
++ * Course build: the two SX1262 modules are held in reset and never configured.
++ *
++ * SPDX-License-Identifier: GPL-2.0-or-later
++ */
++#ifndef FIRMWARE_RADIO_OFF_H
++#define FIRMWARE_RADIO_OFF_H
++
++#if FLATSAT_NO_RADIO
++
++/* Drive both radios into reset and both antenna switches off, before anything
++ * else runs. Call it first in setup().
++ *
++ * Compiling the radio calls out is not enough on its own: the chips would
++ * still power up in their default state, and anything that reached RadioLib
++ * later could key them. Holding RESET low keeps the SX1262 in reset for as
++ * long as the board is powered, so it cannot modulate a carrier whatever the
++ * firmware above it does. That is a property somebody can verify with a
++ * spectrum analyser, which is the point. */
++void radioHoldInReset(void);
++
++/* What the version reply tells the ground, so the state is readable from the
++ * console instead of taken on trust. */
++#define FLATSAT_RADIO_STATE_STR "disabled (held in reset, course build)"
++
++#else
++#define FLATSAT_RADIO_STATE_STR "enabled"
++#endif /* FLATSAT_NO_RADIO */
++
++#endif // FIRMWARE_RADIO_OFF_H
+diff -ruN --exclude=.pio --exclude=.gitignore .orig/worker.cpp Firmware/worker.cpp
+--- .orig/worker.cpp	2026-11-06 21:17:28
++++ Firmware/worker.cpp	2026-11-06 21:18:04
+@@ -576,12 +576,20 @@
+ 
+ static void transmitPacketRadioUSB(uint8_t *buffer, ssize_t buffer_len) {
+   obcUSBTransmitFrame(buffer, buffer_len);
++#if !FLATSAT_NO_RADIO
+   downlinkRadioTransmitNBlock(buffer, buffer_len);
++#endif
+ }
+ 
+ static bool transmitPacketRadioUSBBlock(uint8_t *buffer, ssize_t buffer_len) {
+   obcUSBTransmitFrame(buffer, buffer_len);
++#if FLATSAT_NO_RADIO
++  /* USB carried it. Nothing left to do, and the caller's contract is "did the
++   * frame go out", which it did. */
++  return true;
++#else
+   return downlinkRadioTransmit(buffer, buffer_len);
++#endif
+ }
+ 
+ static uint16_t packetTotalLen(space_packet_t *space_packet) {
+@@ -1578,8 +1586,17 @@
+       ledBlink(4, LED_COLOR_YELLOW);
+       return;
+     }
++#if FLATSAT_NO_RADIO
++    /* The relay is attack 02 and the vulnerability is untouched: the command
++     * is still accepted, still unauthenticated, still length-unchecked, and
++     * the IDS still sees it. What does not happen is the transmission. */
++    Serial.printf("[WARN] BROADCAST_MSG accepted but not transmitted: "
++                  "radio disabled in this build (%u MHz)\r\n", frequency);
++    telemetrySPPTransmitError("BROADCAST RADIO DISABLED");
++#else
+     downlinkRadioTransmitBroadcast(frequency, (uint8_t *)&tm_packet,
+                                    total_len);
++#endif
+     debugPrintTelemetryPacket(&tm_packet, "PAYLOAD_BROADCAST");
+     logger_spp(&tm_packet);
+   } else if (apid == SPP_APID_TC_FLASH) {

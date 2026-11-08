@@ -1,0 +1,21 @@
+# One environment for all four parts of the bench.
+#
+# The sensor needs only pyserial. The attacks need pyserial and an AES
+# implementation. C3 needs the rest. Keeping them in one virtual environment
+# means one `source .venv/bin/activate` instead of three, which is one fewer
+# thing to get wrong in a room of twenty people.
+#
+# pycryptodome installs under the `Crypto` namespace. Both the attacks and C3
+# try `Cryptodome` first and fall back to `Crypto`, so this one package serves
+# both and pycryptodomex is not needed.
+
+fastapi>=0.110
+pydantic>=2.0
+uvicorn[standard]>=0.29
+pyserial>=3.5
+pycryptodome>=3.20
+itsdangerous>=2.1
+pyzmq>=27.0
+pyusb>=1.2
+numpy>=1.26
+pytest>=8.0

@@ -1,0 +1,48 @@
+# PWNSAT-C3 -- the ground console, pointed at the sensor rather than the board.
+#
+# Install:
+#   sudo cp systemd/pwnsat-c3.service /etc/systemd/system/
+#   sudo systemctl edit pwnsat-c3      # set User, WorkingDirectory, credentials
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now pwnsat-c3
+#
+# Read the credentials note below before putting this on a shared machine.
+
+[Unit]
+Description=PWNSAT-C3 - ground console for the FlatSat bench
+Documentation=https://github.com/r0r0x-xx/JP-Bootcamp
+# Not a hard dependency: C3 retries the sensor every few seconds, so it comes
+# up fine on its own and reconnects when the sensor appears.
+After=network.target pwnsat-ids.service
+Wants=pwnsat-ids.service
+
+[Service]
+Type=simple
+User=pwnsat
+Group=dialout
+WorkingDirectory=/opt/JP-Bootcamp/c3
+Environment=PYTHONUNBUFFERED=1
+
+# This is what puts the sensor in the middle. Without it C3 opens the serial
+# port directly, the sensor cannot have it, and no attack is ever inspected.
+Environment=PWNSAT_C3_IDS_ENDPOINT=127.0.0.1:5010
+
+# Demo credentials. Override them here for anything but a closed bench.
+Environment=PWNSAT_C3_USERNAME=operator
+Environment=PWNSAT_C3_PASSWORD=pwnsat
+# Leave SECRET_KEY unset and a fresh random one is generated at every start,
+# which logs everybody out on restart. Set it to keep sessions across restarts.
+# Environment=PWNSAT_C3_SECRET_KEY=
+
+ExecStart=/opt/JP-Bootcamp/.venv/bin/uvicorn backend.app:app --host 127.0.0.1 --port 8000
+
+Restart=on-failure
+RestartSec=5
+
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=read-only
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,32 @@
+# The Python environment. Rebuilt by install.sh; never committed.
+.venv/
+# Downloaded wheels for an offline install (docs/01 §7). About 60 MB,
+# architecture-specific, and rebuilt in one command.
+wheels/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# PlatformIO's build tree. 38 MB of objects rebuilt from source in a minute.
+firmware/Firmware/.pio/
+
+# The duplicate image verify.sh leaves behind. Byte-identical to the course
+# binary under a different name, and having two candidates on the morning of
+# the workshop is how the wrong one gets flashed.
+firmware/binaries/flatsat-firmware-v1.0.5-norf.uf2
+
+# Captures and dumps produced while working. The flash dump from lab 2.9 has
+# the AES key in it.
+captures/
+*.pcap
+*.bin
+!firmware/binaries/*.uf2
+# The challenge material is the course, not a working file. It ships.
+!challenges/*.bin
+!challenges/*.cf32
+
+# Editors and the operating system
+.DS_Store
+.vscode/
+.idea/
+*.swp
