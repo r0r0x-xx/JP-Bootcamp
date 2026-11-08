@@ -37,6 +37,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from . import attack_registry, command_registry, settings
 from .telemetry_bus import TelemetryBus
 from .transport.base import Transport
+from .transport.ids_link import IdsTransport
 from .transport.pwncube_link import PwncubeTransport
 from .transport.serial_link import SerialTransport
 from .transport.zmq_link import ZmqTransport
@@ -82,13 +83,17 @@ _paused_sources: set[str] = set()
 # attempt AES decryption: PWNCUBE never encrypts, regardless of whether
 # its bytes arrived via "cube" (USB) or "radio".
 active_platform: str = "flatsat"
-_SOURCE_PRIORITY = ["serial", "radio", "cube"]
+# "ids" first: when the sensor is in line it is the only path to the board,
+# so defaulting to anything else leaves the console showing an empty radio
+# feed while a live link sits one entry down the list.
+_SOURCE_PRIORITY = ["ids", "serial", "radio", "cube"]
 # Which sources belong to which platform selector card -- api_platform uses
 # this to flip active_source (and therefore _tx_transport()'s pick, see
 # below) automatically when the operator switches craft, so the platform
 # screen is not just a frontend skin: choosing PWNCUBE there really does
 # route commands to the PWNCUBE board.
-_PLATFORM_SOURCES = {"pwncube": ("cube", "radio"), "flatsat": ("serial", "radio")}
+_PLATFORM_SOURCES = {"pwncube": ("cube", "radio"),
+                     "flatsat": ("ids", "serial", "radio")}
 _seq_counter = 0
 
 
@@ -100,6 +105,27 @@ def _next_seq() -> int:
 
 def _build_sources() -> Dict[str, Transport]:
     built: Dict[str, Transport] = {}
+
+    # With the Space IDS in line it holds the serial port exclusively, so the
+    # console reaches the board through the sensor or not at all. Set
+    # PWNSAT_C3_IDS_ENDPOINT (127.0.0.1:5010) to use it; "1" means that
+    # default, so nobody has to remember the port number.
+    #
+    # Decided before anything probes a serial port, and not after: the probe
+    # below opens candidate ports to see which one answers, and the one it
+    # wants is the one the sensor is holding. Asking first is what keeps
+    # startup from hanging on a port that will never open.
+    ids_endpoint = os.environ.get("PWNSAT_C3_IDS_ENDPOINT")
+    if ids_endpoint in ("1", "yes", "true"):
+        ids_endpoint = "127.0.0.1:5010"
+    if ids_endpoint:
+        built["ids"] = IdsTransport(ids_endpoint)
+        log.info("Space IDS transport configured: %s", ids_endpoint)
+        radio_address = os.environ.get("PWNSAT_C3_ZMQ_ADDRESS",
+                                       "tcp://127.0.0.1:5005")
+        built["radio"] = ZmqTransport(radio_address)
+        return built
+
     serial_port = os.environ.get("PWNSAT_C3_SERIAL_PORT")
     if not serial_port:
         # No explicit override -- auto-detect which USB serial port is the
@@ -163,11 +189,14 @@ def _tx_transport() -> Optional[Transport]:
     both a FlatSat and a PWNCUBE plugged in, commands follow whichever one
     is live rather than always favoring FlatSat); falls back to the fixed
     priority order if none are connected yet, same as before."""
-    for name in ("serial", "cube"):
+    # "ids" counts as wired: it is the same USB cable, with the sensor
+    # holding the near end. Leaving it out of this list was enough to make
+    # the console show live telemetry and refuse to send a single command.
+    for name in ("ids", "serial", "cube"):
         t = sources.get(name)
         if t is not None and t.connected:
             return t
-    for name in ("serial", "cube"):
+    for name in ("ids", "serial", "cube"):
         t = sources.get(name)
         if t is not None:
             return t
