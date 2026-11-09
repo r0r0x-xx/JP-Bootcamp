@@ -1,0 +1,33 @@
+JP-Bootcamp
+Copyright (C) 2026 Starsec
+
+This program is free software: you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free Software
+Foundation, either version 3 of the License, or (at your option) any later
+version. See LICENSE.
+
+Per-component licensing, because this repository carries three:
+
+  firmware/      GPL-2.0-or-later, as the SPDX headers in the source declare.
+                 "or later" means it may be used under GPL-3.0, which is why
+                 the root licence does not conflict with it.
+
+  c3/            MIT, see c3/LICENSE. Two generated files under c3/gradio/
+                 carry GPL-3.0 headers because GNU Radio Companion emits them;
+                 those two are GPL-3.0, not MIT.
+
+  everything     GPL-3.0-or-later, under the root LICENSE.
+  else
+
+Third-party material referenced, not included:
+
+  SPARTA technique identifiers are The Aerospace Corporation's. Mapping an
+  observation to one of them is this project's analysis, not an official
+  classification.
+
+  CCSDS 133.0-B, 232.0-B and 355.0-B are the Consultative Committee for Space
+  Data Systems'. NIST IR 8401 is NIST's.
+
+  gr-lora_sdr, shipped prebuilt under challenges/packages/, is GPL-3.0 and is
+  not this project's work. Its source is at
+  https://github.com/tapparelj/gr-lora_sdr, pinned at commit 862746d.

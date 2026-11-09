@@ -65,10 +65,26 @@ under.
 
 ## Licence and provenance
 
-`c3/` is MIT (see [`c3/LICENSE`](c3/LICENSE)). The firmware and the course
-material are Starsec's and are **private**. This repository is private and is
-not to be redistributed.
+| | |
+|---|---|
+| `firmware/` | GPL-2.0-or-later, as the source headers declare |
+| `c3/` | MIT, see [`c3/LICENSE`](c3/LICENSE). Two generated files under `c3/gradio/` carry GPL-3.0 headers, because GNU Radio Companion emits them |
+| everything else | GPL-3.0-or-later, see [`LICENSE`](LICENSE) |
+
+[`NOTICE`](NOTICE) has the detail, including the third-party material this
+references but does not include.
 
 SPARTA technique identifiers are The Aerospace Corporation's. Mapping an
 observation to one of them is this project's analysis, not an official
 classification, and the sensor's console says so on every alert.
+
+## What this is for
+
+A training bench. Every target in it is hardware you own, every attack runs
+over a USB cable, and the course firmware cannot transmit on any radio band:
+the driver is not in the binary and both transceivers are held in reset. That
+is a control you can verify, and `firmware/verify.sh` re-proves it from source
+by counting symbols.
+
+The techniques are all from published sources, SPARTA, CCSDS and NIST IR 8401.
+Nothing here is a vulnerability in anybody else's system.

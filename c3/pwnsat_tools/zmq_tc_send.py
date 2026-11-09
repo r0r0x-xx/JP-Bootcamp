@@ -26,7 +26,9 @@ from usb_tc_send import (
 )
 
 
-DEFAULT_ENDPOINT = "tcp://192.168.0.21:5007"
+# Loopback by default. Point it elsewhere with --endpoint when the bridge runs
+# on another machine.
+DEFAULT_ENDPOINT = "tcp://127.0.0.1:5007"
 
 
 def build_parser() -> argparse.ArgumentParser:

@@ -90,9 +90,7 @@ git clone https://github.com/r0r0x-xx/JP-Bootcamp.git
 cd JP-Bootcamp
 ```
 
-This repository is private. If the clone asks for a password, you need a GitHub
-token rather than your account password: `gh auth login`, or a personal access
-token with `repo` scope.
+If `git` is not installed yet, `sudo apt install -y git` first.
 
 ---
 
