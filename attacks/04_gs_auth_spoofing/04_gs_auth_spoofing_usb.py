@@ -48,8 +48,12 @@ def main() -> int:
         replies = fsat.send(TC_GS_ACCESS, b"\x00", seq=args.seq + 1, listen=1.5)
 
         challenge = None
+        refusal = None
         for p in replies:
             body = fsat.plaintext(p)
+            if p.apid == 0x09:
+                refusal = body.split(b"\x00", 1)[0].decode("ascii", "replace").strip()
+                print(f"[!] the board refused: {refusal}")
             # The challenge is the sixth through ninth octets, little endian.
             # In front of it sit the spacecraft id, the phase, the auth state
             # and two status bytes. Reading it from octets 1..4 big endian
@@ -59,8 +63,29 @@ def main() -> int:
             if p.apid == TC_GS_ACCESS and len(body) >= 9:
                 challenge = struct.unpack_from("<I", body, 5)[0]
                 print(f"[*] challenge: 0x{challenge:08X}")
-        if challenge is None:
-            print("[!] no challenge came back. Is ground-station mode on?")
+        # A challenge of zero is not a challenge. The gate checks range before
+        # it checks identity (worker.cpp:466-482), so a board outside the
+        # station's radius refuses at the earlier step and never issues one.
+        # Guarding only on None let the lab answer a number nobody asked and
+        # then print its closing line as though it had worked.
+        if challenge is None or challenge == 0:
+            if challenge == 0:
+                print("[!] the challenge came back as zero, so no session was "
+                      "opened.")
+            else:
+                print("[!] no challenge came back.")
+            if refusal:
+                print(f"[!] the board already told you why: {refusal}")
+            print("\nThe gate checks three things in order: that the GPS fix "
+                  "is usable, that you are inside the station's radius, and "
+                  "only then that a session exists.")
+            print("  GS GPS INVALID    no usable fix")
+            print("  GS RANGE LOCK     outside the radius. The course build "
+                  "starts in Tokyo and the station is in Sapporo, which is "
+                  "about 830 km outside the 35 km it allows. Spoof the "
+                  "position into range first, with lab 2.3, and come back")
+            print("  GS AUTH REQUIRED  in range, no session. This lab's step")
+            print("  ground-station mode off  nothing to open at all")
             return 1
 
         if args.inside_window:

