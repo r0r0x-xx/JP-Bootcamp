@@ -7,15 +7,9 @@ will bring.
 
 ### Verified
 
-| | |
-|---|---|
-| Ubuntu arm64 | 26.04, VMware Fusion on Apple Silicon, 8 November 2026 |
-| Ubuntu amd64 | a virtual machine on a Windows host, 9 November 2026 |
-
-Install, flashing, the radio-off banner, the eighteen sensor tests, labs 1.5
-and 1.6 from capture to frames, the three components in line, the ten attacks,
-and PWNSAT-C3. The counts quoted in `README.md` come from the arm64 run; the
-amd64 column records that the same steps completed.
+Run end to end on Ubuntu 26.04, on both `arm64` and `amd64`: install, flashing,
+the radio-off banner, the sensor's test suite, labs 1.5 and 1.6 from capture to
+frames, the three components in line, the ten attacks, and PWNSAT-C3.
 
 The course firmware is frozen as
 `firmware/binaries/flatsat-course-noradio-v1.0.5.uf2`, SHA-256 `650c363a…`.

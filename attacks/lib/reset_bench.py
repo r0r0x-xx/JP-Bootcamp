@@ -3,42 +3,28 @@
 #
 # reset_bench.py -- put the FlatSat back to the state every lab assumes.
 #
-# Each attack in this set assumes a clean bench and none of them leave one.
-# Lab 03 leaves the spacecraft at the spoofed position, lab 04 leaves the
-# ground-station gate closed with no session, lab 07 leaves the secure link
-# off. Run them in syllabus order without this in between and the failures
-# read like broken labs, which is how an afternoon gets spent in usbCDC.cpp
-# looking for a firmware fault that was never there.
+# Every attack assumes a clean bench and none of them leave one: lab 03 leaves
+# the spoofed position, lab 04 leaves the gate closed with no session, lab 07
+# leaves the secure link off.
 #
-# Three things define the clean state:
+# The clean state:
 #
 #   secure link   on     -- the attacks open with encrypt=True
-#   gs mode       off    -- with the mode off the gate does not apply at all,
-#                           so gated commands land and each lab can set up
-#                           whatever gate state it needs
+#   gs mode       off    -- with the mode off the gate does not apply, so each
+#                           lab can set up whatever gate state it needs
 #   position      Tokyo  -- COURSE_GPS_* in sensors.cpp, the firmware default
 #
-# Getting there has two obstacles, and both were found by running this against
-# a board the labs had actually been used on:
+# Two obstacles, both found running this against a used board:
 #
 #   1. The board may be listening in cleartext, because lab 07 left the secure
-#      link off. A reset that cannot hear the board cannot verify its own work,
-#      so the encryption state is discovered rather than assumed.
+#      link off, so the encryption state is discovered rather than assumed.
 #
-#   2. The gate may be shut. With ground-station mode on, no session open and
-#      the spoofed position out of range, EVERY gated command is refused --
-#      including the GS_MODE command that would turn the gate off. That is a
-#      complete lockout and no amount of retrying gets through it.
-#
-#      The way out is the door the firmware leaves open on purpose:
-#      SPP_APID_TC_GS_ACCESS is exempt from the gate (worker.cpp:424), because
-#      otherwise no session could ever be opened through a closed gate. So the
-#      reset does the same handshake lab 04 does, with the same key, and the
-#      session it opens is what lets the rest of the commands land.
-#
-#      Using the lab's own exploit to clean up after the lab is not elegant.
-#      It is, however, exactly what the instructor would have to do by hand,
-#      and it is better written down than rediscovered at nine in the morning.
+#   2. The gate may be shut. With the mode on, no session and the position out
+#      of range, every gated command is refused, GS_MODE included: a complete
+#      lockout. The way out is the door the firmware leaves open on purpose,
+#      SPP_APID_TC_GS_ACCESS being exempt from the gate (worker.cpp:424). So
+#      the reset runs lab 04's handshake with the same key, and the session it
+#      opens is what lets the rest of the commands land.
 
 import struct
 import sys
