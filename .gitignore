@@ -30,3 +30,9 @@ captures/
 .vscode/
 .idea/
 *.swp
+
+# The final exercise. It is not part of the repository the students clone:
+# the answer key is in there, the two images are 60 MB each and over GitHub's
+# limit, and src/ vendors the whole of cFS and CryptoLib. It travels on the
+# USB stick. Decision of 9 November 2026.
+pwncube/

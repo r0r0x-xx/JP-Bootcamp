@@ -83,24 +83,28 @@ Then open:
 
 Being specific about this matters more than claiming coverage.
 
-The Ubuntu column is **26.04 on arm64**, in a VMware Fusion virtual machine on
-Apple Silicon, 8 November 2026.
+**Both architectures, on the operating system the room will be running.**
 
-| | macOS | Ubuntu |
-|---|---|---|
-| `install.sh` on a clean machine | n/a | ✅ |
-| Flashing, and the radio-off banner read back | ✅ board `fsat-20004E46` | ✅ |
-| Radio absent from the binary, checked against the `.uf2` | ✅ 0 SX126x symbols, 0 transmit | n/a |
-| Space IDS test suite | ✅ | ✅ 18/18 |
-| LoRa receiver packages, installed and decoding | n/a | ✅ **all six**, see below |
-| Labs 1.5 and 1.6, capture to frames | ✅ | ✅ 661 octets, 28 packets |
-| **The three in line**: board, sensor, console | ✅ | ✅ |
-| The ten attacks | ✅ 7 Nov, board `fsat-200052E9`, 116 alerts, 11 rules | ✅ |
-| PWNSAT-C3 | ✅ | ✅ |
+| | macOS | Ubuntu arm64 | Ubuntu amd64 |
+|---|---|---|---|
+| `install.sh` on a clean machine | n/a | ✅ | ✅ |
+| Flashing, and the radio-off banner read back | ✅ board `fsat-20004E46` | ✅ | ✅ |
+| Radio absent from the binary, checked against the `.uf2` | ✅ 0 SX126x symbols, 0 transmit | n/a | n/a |
+| Space IDS test suite | ✅ | ✅ 18/18 | ✅ |
+| LoRa receiver packages, installed and decoding | n/a | ✅ **all six**, see below | ✅ |
+| Labs 1.5 and 1.6, capture to frames | ✅ | ✅ 661 octets, 28 packets | ✅ |
+| **The three in line**: board, sensor, console | ✅ | ✅ | ✅ |
+| The ten attacks | ✅ 7 Nov, board `fsat-200052E9`, 116 alerts, 11 rules | ✅ | ✅ |
+| PWNSAT-C3 | ✅ | ✅ | ✅ |
 
-**Not yet tested on amd64.** Every Ubuntu result above is arm64. The packages
-exist for both and were each checked in a container of their own
-architecture, but the bench as a whole has only been run on one.
+| Column | Where it was run |
+|---|---|
+| Ubuntu arm64 | 26.04, VMware Fusion on Apple Silicon, 8 November 2026 |
+| Ubuntu amd64 | a virtual machine on a Windows host, 9 November 2026 |
+
+**The counts in the table come from the arm64 run.** The amd64 column records
+that the same steps completed, not a second set of measurements. Both
+architectures now cover the whole bench rather than the packages alone.
 
 **What the Ubuntu run cost, and what it found.** Three labs looked broken and
 were not: the board refuses in plain words inside an `ERROR` frame, and the

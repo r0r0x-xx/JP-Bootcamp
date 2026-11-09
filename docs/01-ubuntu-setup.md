@@ -375,9 +375,13 @@ with internet, under one without.
 
 ## What has actually been run on Ubuntu
 
-All of it, on **26.04 arm64** in a VMware Fusion virtual machine on Apple
-Silicon, 8 November 2026: install, flash, the sensor, the console and the ten
-attacks. **Not yet on amd64.**
+All of it, on **both architectures**: install, flash, the sensor, the console
+and the ten attacks.
+
+| | Where |
+|---|---|
+| arm64 | 26.04, VMware Fusion on Apple Silicon, 8 November 2026 |
+| amd64 | a virtual machine on a Windows host, 9 November 2026 |
 
 Three things that cost time there, so they are worth knowing before you start.
 
