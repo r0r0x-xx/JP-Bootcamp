@@ -7,9 +7,10 @@ will bring.
 
 ### Verified
 
-Run end to end on Ubuntu 26.04, on both `arm64` and `amd64`: install, flashing,
-the radio-off banner, the sensor's test suite, labs 1.5 and 1.6 from capture to
-frames, the three components in line, the ten attacks, and PWNSAT-C3.
+Run end to end on Ubuntu, on both `arm64` and `amd64`: install, flashing, the
+radio-off banner, the sensor's test suite, labs 1.5 and 1.6 from capture to
+frames, the three components in line, the ten attacks, PWNSAT-C3, and both
+days of labs in full.
 
 The course firmware is frozen as
 `firmware/binaries/flatsat-course-noradio-v1.0.5.uf2`, SHA-256 `650c363a…`.
