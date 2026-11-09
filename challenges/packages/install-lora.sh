@@ -27,9 +27,15 @@ fi
 echo "Ubuntu ${REL} on ${ARCH}"
 echo "Installing $(basename "$DEB")"
 
+# Copied out of $HOME first: apt drops privileges to the _apt user, which
+# cannot read it there, and prints an unsandboxed-download warning that looks
+# like a failure and is not.
+TMP="$(mktemp -d)"; trap 'rm -rf "$TMP"' EXIT
+cp "$DEB" "$TMP/" && chmod 644 "$TMP/$(basename "$DEB")"
+
 # apt pulls GNU Radio in as a dependency.
 $SUDO apt-get update
-$SUDO apt-get install -y "$DEB"
+$SUDO apt-get install -y "$TMP/$(basename "$DEB")"
 $SUDO ldconfig
 
 echo

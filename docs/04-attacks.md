@@ -64,6 +64,76 @@ way through.
 
 ---
 
+## 🔴 `04` needs the board moved first
+
+The command gate checks three things, in this order
+(`firmware/Firmware/worker.cpp:466-482`):
+
+| | Refusal |
+|---|---|
+| 1 | `GS GPS INVALID` — no usable fix |
+| 2 | **`GS RANGE LOCK`** — outside the ground station's radius |
+| 3 | `GS AUTH REQUIRED` — in range, but no session open |
+
+**Range is checked before identity**, and the course build starts in Tokyo
+(35.7122, 139.7038) while the station is in Sapporo (43.0618, 141.3545) with a
+radius of 35 km. That is about 830 km outside it, so from a fresh board the
+handshake this attack targets is never reached, and the challenge comes back
+as zeros.
+
+Move the spacecraft into range first, which is `03`'s whole subject:
+
+```sh
+FLATSAT_HOST=1 python3 03_gps_spoofing/03_gps_spoofing_usb.py --lat 43.0618 --lon 141.3545
+FLATSAT_HOST=1 python3 04_gs_auth_spoofing/04_gs_auth_spoofing_usb.py
+```
+
+**That dependency is the lab, not an inconvenience.** A gate that decides
+access from an unauthenticated position sensor is the handover problem, and
+you have to spoof the sensor to reach the credential check at all.
+
+The firmware starts with a valid position on purpose, so the refusal a student
+sees is `GS RANGE LOCK` rather than `GS GPS INVALID`, which would read as a
+broken board (`sensors.cpp:378-386`).
+
+---
+
+## The board says why it refused
+
+Refusals arrive as `ERROR`, APID `0x09`, carrying a NUL-terminated ASCII
+string. `01`, `02` and `04` print it. The other seven do not yet, so if one of
+them seems to do nothing, read the frame yourself:
+
+```sh
+FLATSAT_HOST=1 python3 - <<'PY'
+import sys; sys.path.insert(0, 'lib')
+from flatsat import FlatSat, TC_GET_STATUS
+with FlatSat(verbose=False) as f:
+    for p in f.send(TC_GET_STATUS, b"", seq=1, listen=2.0):
+        if p.apid == 0x09:
+            print("ERROR:", f.plaintext(p).split(b"\x00", 1)[0].decode("ascii", "replace"))
+PY
+```
+
+**A refusal nobody prints reads exactly like a broken lab.** Three of these
+looked broken on Ubuntu for that reason alone.
+
+---
+
+## Reading the result through the sensor
+
+With the Space IDS in line, an attack holds a TCP socket to it rather than the
+cable, and **that socket survives the board rebooting**: the sensor loses the
+port, not the script. So `01`'s crash does not kill the connection the way it
+does over a direct cable. It reads the board's uptime instead, and a reboot
+shows as that number going backwards.
+
+`02` has the same shape of problem and the same fix: thruster values travel in
+`SEND_TM` (`0x08`), a heartbeat every 14 to 30 seconds, not in `STATUS`. It
+now asks for the right packet and waits long enough for it.
+
+---
+
 ## Resetting between labs
 
 Several labs leave state behind **on purpose**: `03` leaves the spacecraft at a
@@ -139,7 +209,7 @@ Every script takes `--port` to skip auto-detection. Beyond that:
 | `09` | `--restore` | Undo the thruster change |
 
 `--cleartext` appears on most of them. It sends the command unencrypted, which
-is what you want **after** lab 2.8 has turned the secure link off, and what
+is what you want **after** lab 2.6 has turned the secure link off, and what
 you do not want before it.
 
 ---

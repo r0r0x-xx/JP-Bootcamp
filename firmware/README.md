@@ -43,8 +43,8 @@ Board `fsat-20004E46`, 8 November 2026, after flashing this image:
 | Board event channel | 42 events parsed, so the stubbed RSSI/SNR/CRC accessors did not break it |
 | Clean traffic through the sensor | zero alerts |
 | Lab 1.8, identifier sweep | 10 of 20 identifiers mapped |
-| Lab 2.9, flash read | 165 octets, ending `PWNsatLabKey1234` |
-| Lab 2.4, command injection | runs, restores |
+| Lab 2.7, flash read | 165 octets, ending `PWNsatLabKey1234` |
+| Lab 2.2, command injection | runs, restores |
 | Rules firing | six of fifteen on a short pass |
 
 The ten-attack pass in one sitting was last run against board

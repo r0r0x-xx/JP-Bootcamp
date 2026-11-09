@@ -192,12 +192,33 @@ Default credentials are `operator` / `pwnsat`. Override with
 Expected. `PWNSAT_C3_SECRET_KEY` is random at every start unless you set it.
 Set it to keep sessions across restarts.
 
-### It has never been run on Ubuntu
+### It starts, but the source is `radio` and USB shows as off
 
-Worth saying plainly: **PWNSAT-C3 has not been run on Linux.** Its
-`INSTALL.md` claims Ubuntu 22.04/24.04, but all verification to date was on
-macOS. If you hit something here that is not in this list, it is new
-information and worth writing down.
+The sensor holds the serial port, so the console has to come in through it.
+`PWNSAT_C3_IDS_ENDPOINT` is what does that, and without it C3 probes for a
+port it will never get, finds nothing, and falls back to `radio`, which has
+nothing publishing to it either.
+
+```sh
+PWNSAT_C3_IDS_ENDPOINT=127.0.0.1:5010 uvicorn backend.app:app --port 8000
+```
+
+On startup you should see `Space IDS transport configured: 127.0.0.1:5010`,
+and the active source should be `ids`.
+
+### `sudo: 'uvicorn': command not found`
+
+`sudo` resets `PATH`, so it cannot see the virtual environment. **C3 does not
+need root**: port 8000 is unprivileged, and with the sensor in line C3 never
+touches the serial port. Drop the `sudo`.
+
+### From `c3/`, the virtual environment is one level up
+
+There is one `.venv`, at the root of the repository:
+
+```sh
+cd c3 && source ../.venv/bin/activate
+```
 
 ---
 
@@ -232,6 +253,45 @@ python3 --version
 
 The errors you get on 3.9 point at the line, never at the version, which makes
 this one slow to spot.
+
+---
+
+## In a virtual machine
+
+### `inspectrum` prints EGL and MESA warnings
+
+```
+libEGL warning: failed to get driver name for fd -1
+MESA: error: ZINK: failed to choose pdev
+QSocketNotifier: Can only be used with threads started with QThread
+```
+
+**Noise, not failure.** There is no GPU to accelerate with, so Mesa falls back
+to software. If the window opens, carry on. If it does not, or the spectrum
+panel stays black:
+
+```sh
+sudo apt install -y libgl1-mesa-dri
+QT_QPA_PLATFORM=xcb LIBGL_ALWAYS_SOFTWARE=1 inspectrum challenges/01_downlink_916MHz.cf32
+```
+
+`QT_QPA_PLATFORM=xcb` is there because Ubuntu 26.04 starts on Wayland, which
+is where the `QSocketNotifier` line comes from. The real fix is the host's:
+**VMware Fusion → Settings → Display → Accelerate 3D Graphics**. On Apple
+Silicon with an arm64 guest that may not be available at all, in which case
+software rendering is the only path and the waterfall will be slow but usable.
+
+### The board vanishes when you press BOOTSEL
+
+It re-enumerates as a different USB device, so the hypervisor stops passing it
+through. Reconnect it: **VMware → Removable Devices**. This happens at exactly
+the moment you are trying to flash.
+
+### `lsusb` shows `2e8a:0003` and there is no serial port
+
+That is the board in BOOTSEL. It is a mass-storage device in that state and
+exposes no console. Unplug and replug without touching the button, and it
+comes back as `239a:cafe`.
 
 ---
 

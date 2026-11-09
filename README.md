@@ -26,7 +26,7 @@ is a control you can verify from the boot banner, not a promise.
 | [`ids/`](ids/) | **Space IDS**, the sensor that sits between board and console | Python 3 + `pyserial` |
 | [`c3/`](c3/) | **PWNSAT-C3**, the ground console, a web dashboard | Python 3 + its `requirements.txt` |
 | [`attacks/`](attacks/) | The ten attacks, all over USB | Python 3 + `pyserial`, `pycryptodomex` |
-| [`challenges/`](challenges/) | The RF captures labs 1.5 and 1.6 work on, and the LoRa receiver built for each Ubuntu | `inspectrum` and GNU Radio, both from `apt` |
+| [`challenges/`](challenges/) | The RF captures labs 1.5 and 1.6 work on, `rx.py` to demodulate them, and the LoRa blocks built for each Ubuntu | `inspectrum` and GNU Radio, both from `apt` |
 
 ---
 
@@ -55,14 +55,14 @@ On a fresh Ubuntu 26.04, 24.04 or 22.04, with a FlatSat plugged in:
 ```sh
 git clone https://github.com/r0r0x-xx/JP-Bootcamp.git
 cd JP-Bootcamp
-./install.sh                         # dependencies, venvs, udev rule, dialout group
+./install.sh                         # one venv, the udev rule, the dialout group
 # log out and back in, so the dialout group applies
 
 # terminal 1, the sensor. It takes the serial port for itself.
 cd ids && ./run.sh run
 
 # terminal 2, the ground console, pointed at the sensor
-cd c3 && source .venv/bin/activate
+cd c3 && source ../.venv/bin/activate
 PWNSAT_C3_IDS_ENDPOINT=127.0.0.1:5010 uvicorn backend.app:app --port 8000
 
 # terminal 3, your first attack, sent through the sensor
@@ -83,31 +83,39 @@ Then open:
 
 Being specific about this matters more than claiming coverage.
 
+The Ubuntu column is **26.04 on arm64**, in a VMware Fusion virtual machine on
+Apple Silicon, 8 November 2026.
+
 | | macOS | Ubuntu |
 |---|---|---|
-| Firmware, flashed and verified on hardware | ✅ 8 Nov 2026, board `fsat-20004E46` | not yet |
+| `install.sh` on a clean machine | n/a | ✅ |
+| Flashing, and the radio-off banner read back | ✅ board `fsat-20004E46` | ✅ |
 | Radio absent from the binary, checked against the `.uf2` | ✅ 0 SX126x symbols, 0 transmit | n/a |
-| Space IDS test suite | ✅ 15/15 | not yet |
-| LoRa receiver packages, installed and decoding | n/a | ✅ 8 Nov 2026, **all six**, see below |
-| Space IDS in line, rules firing | ✅ 6 rules on a short pass, 0 on clean traffic | not yet |
-| Lab 2.9, key off the board | ✅ 165 octets ending `PWNsatLabKey1234` | not yet |
-| All ten attacks in one pass | ✅ 7 Nov, board `fsat-200052E9`, 116 alerts, 11 rules | not yet |
-| PWNSAT-C3 | ✅ | **never run on Ubuntu** |
+| Space IDS test suite | ✅ | ✅ 18/18 |
+| LoRa receiver packages, installed and decoding | n/a | ✅ **all six**, see below |
+| Labs 1.5 and 1.6, capture to frames | ✅ | ✅ 661 octets, 28 packets |
+| **The three in line**: board, sensor, console | ✅ | ✅ |
+| The ten attacks | ✅ 7 Nov, board `fsat-200052E9`, 116 alerts, 11 rules | ✅ |
+| PWNSAT-C3 | ✅ | ✅ |
 
-The ten-attack pass was run on the previous board and the previous firmware.
-The firmware changed on 8 November, when the radio driver was removed outright
-rather than left uncalled, so that row is the one still owed a repeat.
+**Not yet tested on amd64.** Every Ubuntu result above is arm64. The packages
+exist for both and were each checked in a container of their own
+architecture, but the bench as a whole has only been run on one.
 
-**The LoRa packages are the exception, and the only one.** Each of the six in
+**What the Ubuntu run cost, and what it found.** Three labs looked broken and
+were not: the board refuses in plain words inside an `ERROR` frame, and the
+scripts were throwing that message away. Lab 2.2 was polling the wrong packet
+for its own result. Lab 2.4 cannot run from the default state at all, because
+the gate checks range before identity. Those three are fixed; the finding
+underneath them is that **a refusal nobody prints reads exactly like a broken
+lab.**
+
+**The LoRa packages.** Each of the six in
 [`challenges/packages/`](challenges/packages/) was installed into a clean
 container of its own Ubuntu release and architecture, and made to decode
 `challenges/02_downlink_916MHz_decode.cf32` to the **28 CCSDS packets** known
 to be in that file. A package that compiles is not a package that decodes, so
 the check is the decode.
-
-**Everything else in this repository exists to be tested on Ubuntu and has
-not been.** Where a step is a reasoned translation from the macOS procedure
-rather than something we watched work, the document says so in those words.
 
 ---
 

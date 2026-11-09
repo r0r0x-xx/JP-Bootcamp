@@ -139,22 +139,26 @@ instead of a tty, and nothing above it changes.
 
 ## Tests
 
-Eleven captures, one per rule. A rule without a capture is a claim, not a
-detection.
+Fourteen captures, between them firing all fifteen rules.
+`tests/test_replay_coverage.py` fails if a rule arrives without one: a rule
+with no capture is a claim, and its lab cannot be shown without a board.
 
 | Capture | Alerts |
 |---|---|
 | `nominal` | **0** |
 | `recon` | `unknown-apid-rate`, `refused-command-burst` |
-| `replay` | `duplicate-frame`, `unauthenticated-tc` |
-| `malformed` | `length-mismatch`, `length-underflow` |
+| `replay` | `duplicate-frame`, `command-before-auth` |
+| `malformed` | `length-mismatch`, `length-underflow`, `refused-command-burst` |
 | `spoof` | `position-jump` |
 | `handover` | `command-before-auth` |
 | `radio-on` | `radio-origin-frame` |
-| `crc` | `crc-accepted` |
+| `crc` | `crc-accepted`, `radio-origin-frame` |
 | `downgrade` | `secure-link-downgrade` |
 | `flash-dump` | `flash-read-sweep` |
 | `gate-chain` | `gate-exemption-chain` |
+| `injection` | `unauthenticated-tc`, `command-before-auth`, `secure-link-downgrade` |
+| `runt` | `runt-frame` |
+| `regression` | `sequence-regression` |
 
 **Clean traffic produces zero alerts.** It is the hardest property of a
 detection set and the easiest to lose, so it is an assertion that runs on every

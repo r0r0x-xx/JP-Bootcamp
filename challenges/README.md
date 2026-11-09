@@ -84,6 +84,13 @@ and why there are six of them.
 inspectrum challenges/01_downlink_916MHz.cf32
 ```
 
+**In a virtual machine** it prints a run of EGL and MESA warnings and opens
+anyway. If the spectrum panel stays black:
+
+```sh
+QT_QPA_PLATFORM=xcb LIBGL_ALWAYS_SOFTWARE=1 inspectrum challenges/01_downlink_916MHz.cf32
+```
+
 Set the sample rate to **500000** in the toolbar. Nothing else is configured
 for you.
 
@@ -110,6 +117,48 @@ factor from the picture alone, without having read them here first.
 ---
 
 ## Lab 1.6, demodulating a capture back to frames
+
+`rx.py` does the whole chain in one run: the shift to baseband, the LoRa
+receiver, and the CCSDS parse. **It takes the number you measured; it does
+not look it up.**
+
+```sh
+deactivate            # GNU Radio lives in the system packages, not the venv
+python3 challenges/rx.py challenges/01_downlink_916MHz.cf32 --offset <your Hz>
+```
+
+```
+468816 samples, shifted by +117.0 kHz
+661 octets recovered
+  0x001  PING       x22
+  0x008  SEND_TM    x1
+  0x00C  STATUS     x1
+  0x00E  NAV        x1
+  0x020  IDS_EVENT  x3
+28 packets, 5 identifiers
+```
+
+The sample rate comes from the SigMF sidecar, so `--samp-rate` is only needed
+for a capture that has none. `--bw`, `--sf` and `--cr` default to the link's
+real parameters; override them to see what a wrong guess does. `--keep` leaves
+the shifted file on disk instead of deleting it.
+
+**Run it from the repository root.** `challenges/` hangs off the root, so a
+relative path from inside `attacks/` or `ids/` will not find the capture.
+
+**Measured tolerance, 8 November 2026.** Anything from **+80 kHz to +160 kHz**
+recovers all 661 octets; 0 and +40 kHz recover nothing. The usable window is
+at least 80 kHz wide, not a few kilohertz: `gr-lora_sdr` corrects frequency
+error in its sync block, and at 250 kHz of bandwidth a few kilohertz is noise
+to it. **A measurement that is tens of kilohertz off still decodes.** Say that
+rather than letting somebody discover it by accident.
+
+---
+
+### The same thing by hand
+
+`rx.py` is three steps in a file. Here they are separately, which is what the
+book walks through.
 
 Use the offset you measured. The receiver expects the signal at baseband
 centre, so shift it there first:
@@ -146,9 +195,8 @@ data = bytes(tb.sink.data())
 print(len(data), "octets")
 ```
 
-**Expected: 661 octets.** If you get zero, your offset is wrong by enough to
-matter. Go back to inspectrum, measure again, and note how little error it
-takes to lose the signal entirely.
+**Expected: 661 octets.** Zero means your offset is outside the window
+measured above. Go back to inspectrum and measure again.
 
 Then take those octets apart as CCSDS, the way lab 1.8 taught: six octets of
 primary header, DATA LENGTH being octets minus one, and the APID straddling

@@ -120,9 +120,9 @@ survives the encryption. That is lab `1.9`.
 
 ## The rules, and the two it cannot catch
 
-Fifteen rules. Eleven captures. Clean traffic produces **zero** alerts, which
-is the hardest property of a detection set and the easiest to lose, so it is
-asserted on every build.
+Fifteen rules, and fourteen captures that between them fire all fifteen. Clean
+traffic produces **zero** alerts, which is the hardest property of a detection
+set and the easiest to lose, so it is asserted on every build.
 
 Every rule carries its defence, in `ids/pwnsat_ids/knowledge.py`: what sets it
 off, why it matters, how the fault is fixed, and which firmware line it is on.

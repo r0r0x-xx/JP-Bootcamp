@@ -375,11 +375,25 @@ with internet, under one without.
 
 ## What has actually been run on Ubuntu
 
-**None of this.** Every step above is a translation of the macOS procedure that
-was verified on 7 November 2026, using Ubuntu's documented behaviour for
-`dialout`, udev and `lsusb`. The Python is platform-independent and the test
-suites do not touch hardware, so those should be exact. The USB and permission
-steps are the ones to watch.
+All of it, on **26.04 arm64** in a VMware Fusion virtual machine on Apple
+Silicon, 8 November 2026: install, flash, the sensor, the console and the ten
+attacks. **Not yet on amd64.**
+
+Three things that cost time there, so they are worth knowing before you start.
+
+**Do not run `install.sh` with `sudo`.** It warns and then carries on, which
+puts *root* in `dialout` and leaves your own account unable to open the port.
+It also builds the virtual environment as root, so every later `pip install`
+fails on permissions. Run it as the account that will use the board.
+
+**It accepts a broken `.venv`.** The check is only whether the directory
+exists, so a half-built one is reported as `already there` and then nothing
+activates. If `source .venv/bin/activate` says the file is missing, delete the
+directory and let it build again.
+
+**GNU Radio is not in the virtual environment.** `apt` puts it in the system
+packages, which a venv does not see, so lab 1.6 runs with the venv
+deactivated. Everything else runs inside it.
 
 If something here is wrong, it is wrong in this file. Please say what you hit.
 
